@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AURA — Premium Supplements</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#faf8f5;--card:#fff;--fg:#111;--mut:#6b6b6b;--line:#e8e4de;--inv:#111;--invfg:#fff;--photo:#ffffff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0f0f;--card:#181818;--fg:#f4f1ec;--mut:#a09b94;--line:#2a2a2a;--inv:#f4f1ec;--invfg:#111}}
+:root[data-theme="dark"]{--bg:#0f0f0f;--card:#181818;--fg:#f4f1ec;--mut:#a09b94;--line:#2a2a2a;--inv:#f4f1ec;--invfg:#111}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;margin:0;transition:background .3s,color .3s}
+.serif{font-family:'Cormorant Garamond',Georgia,serif}
+.btn{background:var(--inv);color:var(--invfg);display:inline-flex;align-items:center;justify-content:center;padding:.9rem 2rem;border-radius:999px;font-weight:500;letter-spacing:.04em;transition:opacity .2s,transform .2s}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn-o{background:transparent;color:var(--fg);border:1px solid var(--fg)}
+.card{background:var(--card);border:1px solid var(--line)}
+.mut{color:var(--mut)}.ln{border-color:var(--line)}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fade{animation:fade .5s ease both}
+/* moving reassurance band */
+.marquee{overflow:hidden;background:var(--inv);color:var(--invfg)}
+.track{display:flex;width:max-content;animation:scroll 40s linear infinite}
+.marquee:hover .track{animation-play-state:paused}
+@keyframes scroll{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.track{animation:none}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useContext, createContext } = React;
+const x = (en, fr) => ({ en, fr });
+
+/* ============ EDIT HERE ============ */
+// Price format: number first, then currency -> "200.00 Dhs" (EN/FR) | "200 درهم" (Arabic, if you add it later)
+const CURRENCY = { en:"Dhs", fr:"Dhs", ar:"درهم" };
+const DECIMALS = { en:2, fr:2, ar:0 };
+// Light mode (white background) -> black logo | Dark mode (black background) -> white logo
+const LOGO_BLACK = "images/logoblack.png";
+const LOGO_WHITE = "images/logowhite.png";
+// front = shown everywhere (home, shop, slider). back = shown ONLY on the product page.
+// If a front image is missing (front:""), a placeholder bottle is shown instead.
+const PRODUCTS = [
+  { id:"magnesium", name:x("Magnesium","Magnésium"), dose:"300 mg", count:x("60 capsules","60 gélules"), days:x("30 days","30 jours"), price:200, accent:"#9dbfa8",
+    front:"images/magnesiumfront.jpg", back:"images/magnesiumback.jpg",
+    tag:x("Calm · Sleep · Muscles","Calme · Sommeil · Muscles"),
+    blurb:x("A highly bioavailable, gentle magnesium to support relaxation, muscle function and restful nights.","Un magnésium doux et très biodisponible pour favoriser la détente, la fonction musculaire et des nuits réparatrices."),
+    benefits:[x("Supports normal muscle function","Contribue à une fonction musculaire normale"),x("Helps reduce tiredness and fatigue","Aide à réduire la fatigue"),x("Supports the nervous system","Soutient le système nerveux"),x("Gentle on the stomach","Doux pour l'estomac")],
+    usage:x("Take 2 capsules daily with a glass of water, preferably in the evening.","Prendre 2 gélules par jour avec un verre d'eau, de préférence le soir."),
+    link:"https://example.com/buy-magnesium" },
+  { id:"omega3", name:x("Omega-3","Oméga-3"), dose:"1000 mg", count:x("30 capsules","30 capsules"), days:x("30 days","30 jours"), price:150, accent:"#e3c27a",
+    front:"images/omega3front.jpg", back:"images/omega3back.jpg",
+    tag:x("Heart · Brain · Vision","Cœur · Cerveau · Vision"),
+    blurb:x("Premium omega-3 rich in EPA & DHA to support heart, brain and eye health every day.","Oméga-3 premium riche en EPA et DHA pour soutenir chaque jour le cœur, le cerveau et la vision."),
+    benefits:[x("Supports normal heart function","Contribue à une fonction cardiaque normale"),x("Contributes to brain function","Contribue à la fonction cérébrale"),x("Supports normal vision","Contribue à une vision normale"),x("Purified, no fishy aftertaste","Purifié, sans arrière-goût de poisson")],
+    usage:x("Take 1 capsule daily with a meal.","Prendre 1 capsule par jour au cours d'un repas."),
+    link:"https://example.com/buy-omega3" },
+  { id:"zinc", name:x("Zinc","Zinc"), dose:"15 mg", count:x("60 capsules","60 gélules"), days:x("60 days","60 jours"), price:129, accent:"#9fa9c4",
+    front:"images/zincfront.jpg", back:"images/zincback.jpg",
+    tag:x("Immunity · Skin · Focus","Immunité · Peau · Concentration"),
+    blurb:x("Daily zinc to support the immune system, cognitive function and healthy skin.","Du zinc au quotidien pour soutenir le système immunitaire, la fonction cognitive et une peau saine."),
+    benefits:[x("Supports immune health","Soutient les défenses immunitaires"),x("Contributes to cognitive function","Contribue à la fonction cognitive"),x("Helps protect cells from oxidative stress","Protège les cellules du stress oxydatif"),x("Supports normal skin","Contribue à une peau normale")],
+    usage:x("Take 1 capsule daily with food. Adults only.","Prendre 1 gélule par jour pendant un repas. Réservé aux adultes."),
+    link:"https://example.com/buy-zinc" },
+  { id:"d3k2", name:x("Vitamin D3 + K2","Vitamine D3 + K2"), dose:"D3 + K2", count:x("30 capsules","30 gélules"), days:x("30 days","30 jours"), price:179, accent:"#e0b97a",
+    front:"images/vitaminefront.jpg", back:"images/vitamineback.jpg",
+    tag:x("Bones · Immunity · Energy","Os · Immunité · Énergie"),
+    blurb:x("The classic duo: D3 supports normal bones and immunity while K2 helps direct calcium where it belongs.","Le duo classique : la D3 soutient les os et l'immunité, la K2 aide à fixer le calcium là où il faut."),
+    benefits:[x("Supports normal bones and teeth","Contribue à des os et dents normaux"),x("Supports normal immune function","Contribue à une fonction immunitaire normale"),x("Contributes to muscle function","Contribue à la fonction musculaire"),x("K2 contributes to normal blood clotting","La K2 contribue à une coagulation normale")],
+    usage:x("Take 1 capsule daily with a meal containing fat.","Prendre 1 gélule par jour avec un repas contenant des lipides."),
+    link:"https://example.com/buy-d3k2" },
+];
+// The slider always shows the product's FRONT image
+const SLIDES = [
+  { k:x("New essentials","Nouveaux essentiels"), t:x("Wellness, refined.","Le bien-être, raffiné."), s:x("Four daily supplements. Clean formulas, third-party tested.","Quatre compléments quotidiens. Formules propres, testées par un laboratoire indépendant."), id:"magnesium" },
+  { k:x("Best seller","Meilleure vente"), t:x("Sleep deeper. Feel calmer.","Dormez mieux. Soyez plus serein."), s:x("Magnesium Bisglycinate — gentle, pure, 100% plant-based.","Magnésium bisglycinate — doux, pur, 100% végétal."), id:"magnesium" },
+  { k:x("Daily shield","Bouclier quotidien"), t:x("Immunity starts within.","L'immunité commence à l'intérieur."), s:x("Zinc and Vitamin D3+K2 for everyday resilience.","Zinc et Vitamine D3+K2 pour une résistance au quotidien."), id:"zinc" },
+  { k:x("Heart & brain","Cœur & cerveau"), t:x("Pure omega-3, every day.","Des oméga-3 purs, chaque jour."), s:x("Rich in EPA & DHA, purified, no fishy aftertaste.","Riche en EPA et DHA, purifié, sans arrière-goût."), id:"omega3" },
+];
+const TRUST = [
+  { i:"shield", t:x("High quality","Haute qualité"), d:x("Carefully selected ingredients, third-party tested.","Ingrédients soigneusement sélectionnés, testés par un laboratoire indépendant.") },
+  { i:"truck", t:x("Fast delivery","Livraison rapide"), d:x("Quickly shipped and carefully packed.","Expédition rapide et emballage soigné.") },
+  { i:"badge", t:x("ONCA certified","Certifié ONCA"), d:x("Compliant with official standards.","Conforme aux normes officielles.") },
+];
+const TRUST_EXTRA = [
+  { i:"shield", t:x("Third-party tested","Testé en laboratoire"), d:x("Purity and potency verified.","Pureté et dosage vérifiés.") },
+  { i:"leaf", t:x("Non-GMO · Gluten free","Sans OGM · Sans gluten"), d:x("Clean, simple formulas.","Des formules propres et simples.") },
+  { i:"leaf", t:x("Plant-based capsules","Gélules végétales"), d:x("100% vegan-friendly.","100% végétales.") },
+];
+const UI = {
+  home:x("Home","Accueil"), shop:x("Shop","Boutique"), shopAll:x("Shop all","Tout voir"), discover:x("Discover","Découvrir"),
+  coll:x("The collection","La collection"), daily:x("Daily essentials","Les essentiels du quotidien"),
+  buy:x("Buy now","Acheter"), back:x("← Back to shop","← Retour à la boutique"), supply:x("supply","de cure"),
+  ben:x("Benefits","Bienfaits"), use:x("How to use","Conseils d'utilisation"), qual:x("Quality","Qualité"),
+  qualTxt:x("Non-GMO · Gluten free · Third-party tested. Food supplement — not a substitute for a varied diet. Keep out of reach of children.","Sans OGM · Sans gluten · Testé par un laboratoire indépendant. Complément alimentaire — ne remplace pas une alimentation variée. Tenir hors de portée des enfants."),
+  also:x("You may also like","Vous aimerez aussi"), allTxt:x("All Aura supplements","Tous les compléments Aura"),
+  ritual:x("Your daily ritual, elevated.","Votre rituel quotidien, sublimé."),
+  ritualTxt:x("Aura brings together carefully selected ingredients and a minimalist philosophy: fewer things, better quality, every day.","Aura réunit des ingrédients soigneusement choisis et une philosophie minimaliste : moins, mais mieux, chaque jour."),
+  explore:x("Explore the shop","Explorer la boutique"),
+  tagline:x("Premium supplements for a balanced daily ritual.","Des compléments premium pour un rituel quotidien équilibré."),
+  legal:x("Food supplements should not replace a varied diet. Consult a professional if pregnant or under treatment.","Les compléments alimentaires ne remplacent pas une alimentation variée. Consultez un professionnel en cas de grossesse ou de traitement."),
+  rights:x("All rights reserved.","Tous droits réservés."),
+  badges:[x("Non-GMO","Sans OGM"),x("Gluten free","Sans gluten"),x("Third-party tested","Testé en laboratoire"),x("Plant-based capsules","Gélules végétales")],
+};
+/* =================================== */
+
+const Ctx = createContext();
+const useT = () => useContext(Ctx);
+const fmt = (p, lang="en") => p.toFixed(DECIMALS[lang] ?? 2) + "\u00A0" + (CURRENCY[lang] || CURRENCY.en);
+const mix = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, var(--bg))`;
+
+// fixed="light" forces the black logo (used on white surfaces like the placeholder bottle)
+// h = height in pixels; width adjusts automatically to the logo's shape
+const Logo = ({ h=34, fixed }) => {
+  const { theme } = useT();
+  const dark = fixed ? fixed === "dark" : theme === "dark";
+  return <img src={dark ? LOGO_WHITE : LOGO_BLACK} alt="Aura" style={{ height:h, width:"auto" }} className="block object-contain"/>;
+};
+const Icon = ({ n, s=30 }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    {n === "shield" && <><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L15.5 10"/></>}
+    {n === "truck" && <><path d="M2 6h11v10H2zM13 9h4l3 3v4h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></>}
+    {n === "badge" && <><circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 21l5-3 5 3-1.5-7"/><path d="M9.5 9l2 2 3-3.5"/></>}
+    {n === "leaf" && <><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19l7-7"/></>}
+  </svg>
+);
+
+// Fallback when a product has no front image
+function Bottle({ p, big }) {
+  const { t } = useT();
+  return (
+    <div className="flex items-center justify-center w-full h-full" style={{ background: mix(p.accent, 40) }}>
+      <div className={"flex flex-col items-center " + (big ? "scale-90 sm:scale-100" : "scale-75 sm:scale-90")}>
+        <div style={{ width:92, height:34, background:"#111", borderRadius:"6px 6px 2px 2px" }}/>
+        <div className="flex flex-col items-center justify-center text-center text-neutral-900 shadow-xl"
+          style={{ width:150, height:190, background:"#fff", borderRadius:"18px 18px 22px 22px", padding:"0 10px" }}>
+          <Logo h={22} fixed="light"/>
+          <div className="font-semibold text-[15px] leading-tight mt-3">{t(p.name).toUpperCase()}</div>
+          <div className="text-[12px] font-medium">{p.dose}</div>
+          <div className="text-[8px] tracking-widest mt-2 text-neutral-500">{t(p.count).toUpperCase()}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Shows the whole bottle (object-contain) on a soft photo background. Never falls back to the back image.
+const Pic = ({ p, src, big }) => {
+  const img = src === undefined ? p.front : src;
+  if (!img) return <Bottle p={p} big={big}/>;
+  return (
+    <div className="w-full h-full flex items-center justify-center" style={{ background:"var(--photo)" }}>
+      <img src={img} alt={p.id} className="max-w-full max-h-full object-contain p-4 sm:p-6" style={{ mixBlendMode:"multiply" }} loading="lazy"/>
+    </div>
+  );
+};
+
+function BuyBtn({ p, cls="" }) {
+  const { t, lang } = useT();
+  return <a href={p.link} target="_blank" rel="noopener" className={"btn " + cls}>{t(UI.buy)} · {fmt(p.price, lang)}</a>;
+}
+
+// Home + shop cards: front image only
+function Card({ p }) {
+  const { t, lang } = useT();
+  return (
+    <div className="card rounded-2xl overflow-hidden flex flex-col fade">
+      <a href={"#/p/" + p.id} className="block aspect-square overflow-hidden"><Pic p={p}/></a>
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        <p className="mut text-xs tracking-wider uppercase">{t(p.tag)}</p>
+        <a href={"#/p/" + p.id} className="serif text-2xl mt-1">{t(p.name)} <span className="text-lg mut">{p.dose}</span></a>
+        <p className="mut text-sm mt-1">{t(p.count)}</p>
+        <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+          <span className="font-semibold">{fmt(p.price, lang)}</span>
+          <BuyBtn p={p} cls="!py-2 !px-4 text-sm"/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Moving reassurance band (pauses on hover, static if reduced motion)
+function TrustMarquee() {
+  const { t } = useT();
+  const items = [...TRUST, ...TRUST_EXTRA];
+  const row = [...items, ...items];
+  return (
+    <section className="marquee" aria-label="Reassurance">
+      <div className="track">
+        {[...row, ...row].map((r, n) => (
+          <div key={n} className="flex items-center gap-3 px-8 py-4 whitespace-nowrap">
+            <Icon n={r.i} s={26}/>
+            <div><div className="font-semibold text-sm">{t(r.t)}</div><div className="text-xs opacity-70">{t(r.d)}</div></div>
+            <span className="ml-8 opacity-30">•</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Slider() {
+  const { t } = useT();
+  const [i, setI] = useState(0);
+  useEffect(() => { const id = setInterval(() => setI(n => (n + 1) % SLIDES.length), 5500); return () => clearInterval(id); }, []);
+  const s = SLIDES[i], p = PRODUCTS.find(q => q.id === s.id);
+  return (
+    <section className="relative overflow-hidden transition-colors duration-700" style={{ background: mix(p.accent, 28) }}>
+      <div key={i} className="max-w-6xl mx-auto px-5 py-10 pb-12 md:py-16 grid md:grid-cols-2 gap-8 items-center fade">
+        <div className="order-2 md:order-1 text-center md:text-left">
+          <p className="text-xs tracking-[.3em] uppercase mut">{t(s.k)}</p>
+          <h1 className="serif text-4xl sm:text-6xl mt-3 leading-[1.05]">{t(s.t)}</h1>
+          <p className="mt-4 mut max-w-md mx-auto md:mx-0">{t(s.s)}</p>
+          <div className="mt-7 flex gap-3 justify-center md:justify-start flex-wrap">
+            <a href="#/shop" className="btn">{t(UI.shopAll)}</a>
+            <a href={"#/p/" + p.id} className="btn btn-o">{t(UI.discover)}</a>
+          </div>
+        </div>
+        {/* smaller image box, whole bottle visible */}
+        <div className="order-1 md:order-2 w-full max-w-sm mx-auto aspect-square rounded-3xl overflow-hidden shadow-lg"><Pic p={p} big/></div>
+      </div>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+        {SLIDES.map((_, n) => <button key={n} aria-label={"Slide " + (n + 1)} onClick={() => setI(n)}
+          className={"h-2 rounded-full transition-all " + (n === i ? "w-6" : "w-2 opacity-30")} style={{ background: "var(--fg)" }}/>)}
+      </div>
+      <button aria-label="Previous" onClick={() => setI((i + SLIDES.length - 1) % SLIDES.length)} className="hidden md:flex absolute left-4 top-1/2 w-10 h-10 rounded-full card items-center justify-center">‹</button>
+      <button aria-label="Next" onClick={() => setI((i + 1) % SLIDES.length)} className="hidden md:flex absolute right-4 top-1/2 w-10 h-10 rounded-full card items-center justify-center">›</button>
+    </section>
+  );
+}
+
+function Home() {
+  const { t } = useT();
+  return (<>
+    <Slider/><TrustMarquee/>
+    <section className="max-w-6xl mx-auto px-5 py-14">
+      <div className="text-center mb-9"><p className="mut text-xs tracking-[.3em] uppercase">{t(UI.coll)}</p><h2 className="serif text-4xl mt-2">{t(UI.daily)}</h2></div>
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">{PRODUCTS.map(p => <Card key={p.id} p={p}/>)}</div>
+    </section>
+    <section className="max-w-3xl mx-auto px-5 py-14 text-center">
+      <h2 className="serif text-4xl sm:text-5xl">{t(UI.ritual)}</h2>
+      <p className="mut mt-4">{t(UI.ritualTxt)}</p>
+      <a href="#/shop" className="btn mt-7">{t(UI.explore)}</a>
+    </section>
+  </>);
+}
+
+function Shop() {
+  const { t } = useT();
+  return (<>
+    <section className="max-w-6xl mx-auto px-5 py-12">
+      <h1 className="serif text-5xl text-center">{t(UI.shop)}</h1>
+      <p className="mut text-center mt-2 mb-10">{t(UI.allTxt)}</p>
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">{PRODUCTS.map(p => <Card key={p.id} p={p}/>)}</div>
+    </section>
+    <TrustMarquee/>
+  </>);
+}
+
+// Product page: front AND back available in the gallery
+function Product({ id }) {
+  const { t, lang } = useT();
+  const p = PRODUCTS.find(q => q.id === id);
+  const [open, setOpen] = useState(0);
+  const [img, setImg] = useState(0);
+  if (!p) return <Shop/>;
+  // gallery: front (or placeholder bottle if missing) + back
+  const gallery = [p.front || "", p.back].filter((s, n) => n === 0 || s);
+  const acc = [
+    [UI.ben, <ul className="space-y-2">{p.benefits.map((b, n) => <li key={n} className="flex gap-2"><span>✓</span>{t(b)}</li>)}</ul>],
+    [UI.use, <p>{t(p.usage)}</p>], [UI.qual, <p>{t(UI.qualTxt)}</p>],
+  ];
+  return (
+    <section className="max-w-6xl mx-auto px-5 py-8 md:py-14 fade">
+      <a href="#/shop" className="mut text-sm">{t(UI.back)}</a>
+      <div className="grid md:grid-cols-2 gap-8 md:gap-14 mt-5">
+        <div>
+          <div className="aspect-square rounded-3xl overflow-hidden"><Pic p={p} src={gallery[img]} big/></div>
+          {gallery.length > 1 && <div className="flex gap-3 mt-3">{gallery.map((s, n) =>
+            <button key={n} onClick={() => setImg(n)} className={"w-16 h-16 rounded-xl overflow-hidden border-2 " + (n === img ? "" : "opacity-50")} style={{ borderColor: "var(--fg)" }}>
+              <Pic p={p} src={s}/>
+            </button>)}</div>}
+        </div>
+        <div>
+          <p className="mut text-xs tracking-[.3em] uppercase">{t(p.tag)}</p>
+          <h1 className="serif text-4xl sm:text-5xl mt-2">{t(p.name)} <span className="mut">{p.dose}</span></h1>
+          <p className="mut mt-1">{t(p.count)} · {t(p.days)} {t(UI.supply)}</p>
+          <p className="text-3xl font-semibold mt-5">{fmt(p.price, lang)}</p>
+          <p className="mt-4 leading-relaxed">{t(p.blurb)}</p>
+          <BuyBtn p={p} cls="w-full sm:w-auto mt-6"/>
+          <div className="mt-6 card rounded-2xl p-4 grid gap-3">
+            {TRUST.map(r => <div key={r.i} className="flex items-center gap-3"><Icon n={r.i}/><div><div className="text-sm font-semibold">{t(r.t)}</div><div className="mut text-xs">{t(r.d)}</div></div></div>)}
+          </div>
+          <div className="flex flex-wrap gap-2 mt-5 text-xs">{UI.badges.map((b, n) => <span key={n} className="card rounded-full px-3 py-1">{t(b)}</span>)}</div>
+          <div className="mt-8 border-t ln">
+            {acc.map(([h, c], n) => (
+              <div key={n} className="border-b ln">
+                <button onClick={() => setOpen(open === n ? -1 : n)} className="w-full flex justify-between py-4 font-medium text-left">{t(h)}<span>{open === n ? "−" : "+"}</span></button>
+                {open === n && <div className="pb-4 mut text-sm">{c}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <h2 className="serif text-3xl mt-16 mb-6">{t(UI.also)}</h2>
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">{PRODUCTS.filter(q => q.id !== p.id).map(q => <Card key={q.id} p={q}/>)}</div>
+    </section>
+  );
+}
+
+function Header({ theme, setTheme, lang, setLang }) {
+  const { t } = useT();
+  const [m, setM] = useState(false);
+  const links = [[UI.shop, "#/shop"], ...PRODUCTS.map(p => [p.name, "#/p/" + p.id])];
+  return (
+    <header className="sticky top-0 z-30 border-b ln backdrop-blur" style={{ background: "color-mix(in srgb, var(--bg) 88%, transparent)", paddingTop: "env(safe-area-inset-top,0px)" }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2">
+        <a href="#/" className="flex items-center"><Logo h={44}/></a>
+        <nav className="hidden lg:flex gap-7 text-sm">{links.map(([n, h]) => <a key={h} href={h} className="hover:opacity-60">{t(n)}</a>)}</nav>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <button onClick={() => setLang(lang === "en" ? "fr" : "en")} className="text-xs font-semibold tracking-wider border ln rounded-full px-3 py-2" aria-label="Language">
+            <span className={lang === "en" ? "" : "opacity-40"}>EN</span> | <span className={lang === "fr" ? "" : "opacity-40"}>FR</span>
+          </button>
+          <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="w-9 h-9 border ln rounded-full flex items-center justify-center" aria-label="Theme">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              {theme === "dark" ? <><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></> : <path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>}
+            </svg>
+          </button>
+          <button className="lg:hidden p-2" aria-label="Menu" onClick={() => setM(!m)}>
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6">{m ? <path d="M5 5l14 14M19 5L5 19"/> : <path d="M3 7h18M3 12h18M3 17h18"/>}</svg>
+          </button>
+        </div>
+      </div>
+      {m && <nav className="lg:hidden px-5 pb-4 flex flex-col">{[[UI.home, "#/"], ...links].map(([n, h]) => <a key={h} href={h} onClick={() => setM(false)} className="py-3 border-t ln">{t(n)}</a>)}</nav>}
+    </header>
+  );
+}
+
+function Footer() {
+  const { t } = useT();
+  return (
+    <footer className="border-t ln mt-10">
+      <div className="max-w-6xl mx-auto px-5 py-10 grid sm:grid-cols-3 gap-6 text-sm">
+        <div><Logo h={40}/><p className="mut mt-3">{t(UI.tagline)}</p></div>
+        <div className="flex flex-col gap-2"><b>{t(UI.shop)}</b>{PRODUCTS.map(p => <a key={p.id} href={"#/p/" + p.id} className="mut">{t(p.name)}</a>)}</div>
+        <p className="mut">{t(UI.legal)}</p>
+      </div>
+      <p className="text-center mut text-xs pb-8">© {new Date().getFullYear()} Aura. {t(UI.rights)}</p>
+    </footer>
+  );
+}
+
+function App() {
+  const [h, setH] = useState(location.hash || "#/");
+  const [lang, setLang] = useState(() => { try { const s = localStorage.getItem("aura-lang"); if (s) return s; } catch (e) {} return (navigator.language || "en").startsWith("fr") ? "fr" : "en"; });
+  const [theme, setTheme] = useState(() => { try { const s = localStorage.getItem("aura-theme"); if (s) return s; } catch (e) {} return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; });
+  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); try { localStorage.setItem("aura-theme", theme); } catch (e) {} }, [theme]);
+  useEffect(() => { document.documentElement.lang = lang; try { localStorage.setItem("aura-lang", lang); } catch (e) {} }, [lang]);
+  useEffect(() => { const f = () => { setH(location.hash || "#/"); window.scrollTo(0, 0); }; addEventListener("hashchange", f); return () => removeEventListener("hashchange", f); }, []);
+  const t = o => (o && o[lang]) || o;
+  const [, a, b] = h.split("/");
+  return (
+    <Ctx.Provider value={{ t, lang, theme }}>
+      <Header theme={theme} setTheme={setTheme} lang={lang} setLang={setLang}/>
+      <main>{a === "shop" ? <Shop/> : a === "p" ? <Product key={b} id={b}/> : <Home/>}</main>
+      <Footer/>
+    </Ctx.Provider>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
